@@ -1,0 +1,35 @@
+table.lfmadmin {
+	font-family: arial, tahoma, helvetica, geneva, sans-serif; 
+	font-size:10pt;
+}
+.lfmtitle {
+	font-weight:bold;
+	color:#FFFFFF;
+	background:#8888FF;
+}
+.lfmbig {
+	font-size:14pt;
+}
+tr.lfmhead {
+	font-weight:bold;
+	background:#EEEEEE;
+}
+td.lfmhead {
+	padding:5pt;
+}
+
+td.lfmlabel {
+	font-weight:bold;
+}
+
+tr.lfmcontent {
+	background:#FAFAFA;
+}
+td.lfmcontent {
+	padding:5pt;
+}
+
+td.lfmright {
+	text-align:right;
+}
+
