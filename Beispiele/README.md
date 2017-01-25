@@ -12,3 +12,5 @@ Alle Scripte benötigen folgende Dateien im gleichen Verzeichnis
 * `stats_multistation.php` - Ausgabe der wichtigsten Statistiken für mehrere Stationen
 * `livestats.php` - Ausgabe der Live-Statistik
 * `currentplaylist.php` - Ausgabe der aktuellen Playlist mit Markierung des aktuell laufenden Titels
+* `trackstats.php` - Ausgabe der gespielten Titel mit Hörerzahl zum Zeitpunkt des Starts
+
