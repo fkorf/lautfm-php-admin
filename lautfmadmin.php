@@ -168,6 +168,38 @@ class LautfmAdmin {
 		
 	}
 	
+	function getTrackStatistics($stationName, $days) {
+		if($days > 7) {
+			$days = 7;
+		}
+		$path = $this->getStationPath($stationName, "/tracks/stats?days=".$days);
+		$raw = laut_get($this->origin, $this->token, $path);
+		$response = json_decode($raw);
+		
+		$entries = array();
+		for($i = 0; $i < count($response); $i++) {
+			$entry = new TrackStatisticsEntry();
+
+			$entry->id =  $response[$i]->{'id'};
+			$entry->title =  $response[$i]->{'title'};
+			$entry->artist =  $response[$i]->{'artist'}->{'name'};
+			$entry->album =  $response[$i]->{'album'};
+			$entry->year =  $response[$i]->{'release_year'};
+			$entry->duration =  $response[$i]->{'length'};
+			$entry->type =  $response[$i]->{'type'};
+
+			$track->createdAt =  strtotime($response->{'created_at'});
+			$entry->start =  strtotime($response[$i]->{'started_at'});
+			$entry->end =  strtotime($response[$i]->{'ends_at'});
+			$entry->listeners =  $response[$i]->{'listeners'};
+			
+			$entries[$i] = $entry;
+			
+		}
+		
+		return $entries;
+	}
+	
 }
 
 class Playlist {
@@ -216,6 +248,58 @@ class Track {
 	}
 	
 }
+
+class TrackStatisticsEntry {
+	public $id;
+	public $title;
+	public $artist;
+	public $album;
+	public $year;
+	public $duration;
+	public $type;
+
+	public $createdAt;
+	public $updatedAt;	
+
+	public $start;
+	public $end;
+	public $listeners;
+
+	function getCreatedAtAsString() {
+		return date("d.m.Y G:i", $this->createdAt);
+	}
+	
+	function getUpdateddAtAsString() {
+		return date("d.m.Y G:i", $this->updatedAt);
+	}
+
+	function getStartDateAsString() {
+		return date("d.m.Y G:i", $this->start);
+	}
+
+	function getEndDateAsString() {
+		return date("d.m.Y G:i", $this->end);
+	}
+	
+  function getDayAsString() {
+		return date("d.m.Y", $this->start);
+	}
+
+	function getStartTimeAsString() {
+		return date("G:i", $this->start);
+	}
+
+	function getEndTimeAsString() {
+		return date("G:i", $this->end);
+	}
+
+	
+	function getDurationAsString() {
+		return gmdate("H:i:s", $this->getDuration());
+	}
+	
+}
+
 
 class Statistics {
 	public $listeners;
