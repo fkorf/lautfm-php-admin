@@ -179,6 +179,10 @@ class LautfmAdmin {
 		$entries = array();
 		for($i = 0; $i < count($response); $i++) {
 			$entry = new TrackStatisticsEntry();
+			
+			if(!isset($response[$i])) {
+				continue;
+			}
 
 			$entry->id =  $response[$i]->{'id'};
 			$entry->title =  $response[$i]->{'title'};
