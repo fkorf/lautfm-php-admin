@@ -10,7 +10,7 @@ $displayTimespanSelector = 1; // Anzeige der Zeitraumauswahl - 0) nein, 1) ja
 // Bestimmung des Zeitpunkts des letzten Montags, 0:00 Uhr
 function getStartOfWeek() {
   $daysAfterMonday = date('w') - 1;
-  if($daysAfterMnoday == -1) $daysAfterMonday = 6;
+  if($daysAfterMonday == -1) $daysAfterMonday = 6;
   $mon =  time() - ($daysAfterMonday * 60 * 60 * 24) - date('G') * 60 * 60 - date('i') * 60;
   return $mon;
 }
