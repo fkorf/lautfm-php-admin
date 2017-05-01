@@ -9,6 +9,7 @@ $colorBackground = "#FAFAFA";
 ?>
 <html>
 	<head>
+		<meta charset="utf-8" /> 
 		<title><? echo $station ?> - Aktuelle Playlist</title>
 		<link rel="stylesheet" href="lautfmadmin.css">
 		
@@ -39,6 +40,9 @@ $colorBackground = "#FAFAFA";
 		$lfm->token = $token;
 		$playlistId = $lfm->getCurrentPlaylistId($station);
 		$playlist = $lfm->getPlaylist($station, $playlistId, 1);
+		if(!is_null($lastLautError)) {
+		  exit("Fehler: ".$lastLautError);
+		}	
 		?>
 		
 		<table class='lfmadmin' style="margin: 0 auto">

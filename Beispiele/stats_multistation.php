@@ -15,6 +15,9 @@ $lfm->token = $token;
 
 for($i = 0; $i < count($stations); $i++) {
   $stats[$i] = $lfm->getStatistics($stations[$i]);
+	if(!is_null($lastLautError)) {
+		exit("Fehler: ".$lastLautError);
+	}	
 }
 ?>
 

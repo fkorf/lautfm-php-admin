@@ -32,6 +32,9 @@ $selected[$timespan]="selected";
 $lfm = new LautfmAdmin();
 $lfm->token = $token;
 $logs = $lfm->getLiveLog($station);
+if(!is_null($lastLautError)) {
+  exit("Fehler: ".$lastLautError);
+}	
 
 ?>
 
@@ -43,6 +46,7 @@ $logs = $lfm->getLiveLog($station);
 	<body>
 		
 	<form>
+		
 	<table class='lfmadmin'>
 	  <tr class='lfmtitle'>
 			<td colspan=4 style="padding:5pt" style='vertical-align:middle'>

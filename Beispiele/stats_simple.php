@@ -7,6 +7,9 @@ include("lautfmadmin.php");
 $lfm = new LautfmAdmin();
 $lfm->token = $token;
 $stats = $lfm->getStatistics($station);
+if(!is_null($lastLautError)) {
+	exit("Fehler: ".$lastLautError);
+}	
 ?>
 <html>
 	<head>

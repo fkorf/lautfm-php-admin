@@ -21,6 +21,9 @@ include("lautfmadmin.php");
 		$lfm = new LautfmAdmin();
 		$lfm->token = $token;
 		$entries = $lfm->getTrackStatistics($station, $days);
+		if(!is_null($lastLautError)) {
+		  exit("Fehler: ".$lastLautError);
+		}	
 		?>
 		
 		<table class='lfmadmin' style="margin: 0 auto">
