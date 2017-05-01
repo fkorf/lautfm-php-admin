@@ -1,6 +1,43 @@
 <?
+error_reporting(E_ERROR | E_WARNING | E_PARSE);
+
+$lastLautError = null;
+
+function stripHttpHeader($response) {
+	$headerEnd = strpos($response, "\r\n\r\n");
+	if($headerEnd) {
+	  return substr($response, $headerEnd + 4);
+	}
+	else {
+		return $response;
+	}
+}
+
+function laut_checkError($response) {
+	global $lastLautError;
+  if(preg_match("/HTTP.*?(\d{3})/", $response, $match)) {
+  	if($match[1] >= 400) {
+  		$content = stripHttpHeader($response);
+  		if(strpos($content, "{") == 0) {
+  			$errResponse = json_decode($content, true);
+  			$values = array_values($errResponse['_errors:']);
+  			$lastLautError = $match[1]." ".$values[0];
+  		}
+  		else {
+  			$lastLautError = $match[1]." ".strip_tags($content);
+    	}
+    	return true;
+  	}
+	}
+	return false;
+}
 
 function laut_get($origin, $token, $path) {
+	global $lastLautError;
+	$response = "";
+	$errno = 0;
+	$errstr = null;
+	$lastLautError = null;
 	if ( $fp = fsockopen('ssl://api.radioadmin.laut.fm', 443, $errno, $errstr, 30) ) {
 	
 	    $msg  = "GET $path HTTP/1.1\r\n";
@@ -14,19 +51,57 @@ function laut_get($origin, $token, $path) {
 	        }
 	    }
 	    fclose($fp);
-	    
+			if(laut_checkError($response)) {
+				return "";
+			}
+			
 	    // response enthaelt kompletten http-Header - wir wollen nur den eigentlichen Content
-	    $headerEnd = strpos($response, "\r\n\r\n");
-	    if($headerEnd) {
-	    	return substr($response, $headerEnd + 4);
-	    }
-	
-	} else {
-		  echo "$errstr";
-	    $response = false;
-	}	
+	    return stripHttpHeader($response);
+	} 
+	else {
+		$lastLautError = $errstr;
+	}
 	return $response;
 }
+
+function laut_patch($origin, $token, $path, $content) {
+	global $lastLautError;
+	$response = "";
+	$errno = 0;
+	$errstr = null;
+	$lastLautError = null;
+	if ( $fp = fsockopen('ssl://api.radioadmin.laut.fm', 443, $errno, $errstr, 30) ) {
+	
+	    $contentLength = strlen($content) + 2;
+	
+	    $msg  = "PATCH $path HTTP/1.1\r\n";
+	    $msg .= "Host: api.radioadmin.laut.fm\r\n";
+	    $msg .= "Authorization: Bearer $token\r\n";
+	    $msg .= "Origin: $origin \r\n";
+	    $msg .= "Content-Type: application/json; charset=UTF-8\r\n";
+	    $msg .= "Content-Length: ".$contentLength."\r\n";
+	    $msg .= "Connection: close\r\n\r\n";
+	    
+	    $msg .= "\r\n";
+	    $msg .= $content;
+	    $msg .= "\r\n";
+	    	    
+	    if ( fwrite($fp, $msg) ) {
+	        while ( !feof($fp) ) {
+	            $response .= fgets($fp, 1024);
+	        }
+	    }
+	    fclose($fp);
+	    
+	    // response enthaelt kompletten http-Header - wir wollen nur den eigentlichen Content
+	    return stripHttpHeader($response);
+	} 
+	else {
+		$lastLautError = $errstr;
+	}
+	return $response;
+}
+
 
 class LautfmAdmin {
 	
@@ -40,14 +115,16 @@ class LautfmAdmin {
 	function getStationNames() {
 		$names = array();
 		$raw = laut_get($this->origin, $this->token, "/stations");
-		$response = json_decode($raw);
-		for($s = 0; $s < count($response->{'stations'}); $s++) {
-			$id = $response->{'stations'}[$s]->{'id'};
-			$station = $response->{'stations'}[$s]->{'name'};
-			$names[$s] = $station;
-			// echo "$station = $id<br>";
-			$this->stationIds[$station] = $id;
-		}		
+		if($raw != "") {
+			$response = json_decode($raw);
+			for($s = 0; $s < count($response->{'stations'}); $s++) {
+				$id = $response->{'stations'}[$s]->{'id'};
+				$station = $response->{'stations'}[$s]->{'name'};
+				$names[$s] = $station;
+				// echo "$station = $id<br>";
+				$this->stationIds[$station] = $id;
+			}		
+  	}
 		return $names;
 	}
 	
@@ -89,11 +166,10 @@ class LautfmAdmin {
   // Live-Statistik
   // Return: LiveSession[]
 	function getLiveLog($stationName) {
+		$logs = array();
 		$path = $this->getStationPath($stationName, "/live/log");
 		$raw = laut_get($this->origin, $this->token, $path);
 		$response = json_decode($raw);
-
-		$logs = array();
 
 		for($i = 0; $i < count($response); $i++) {
 			$session = new LiveSession();
@@ -111,6 +187,31 @@ class LautfmAdmin {
 		$raw = file_get_contents("http://api.laut.fm/station/".$stationName);
 		$response = json_decode($raw);
 		return $response->{'current_playlist'}->{'id'};
+	}
+	
+	// Alle Playlists, ohne Tracks
+	function getPlaylists($stationName) {
+		$path = $this->getStationPath($stationName, "/playlists");
+		$raw = laut_get($this->origin, $this->token, $path);
+		$response = json_decode($raw);
+		
+		$result = array();
+		
+		for($i = 0; $i < count($response->{'playlists'}); $i++) {
+			$playlist = new Playlist();
+			$playlist->id = $response->{'playlists'}[$i]->{'id'};
+			$playlist->name = $response->{'playlists'}[$i]->{'title'};
+			$playlist->description = $response->{'playlists'}[$i]->{'description'};
+			$playlist->color = $response->{'playlists'}[$i]->{'color'};
+			$playlist->shuffled = $response->{'playlists'}[$i]->{'shuffled'};
+			$playlist->size = $response->{'playlists'}[$i]->{'size'};
+			$playlist->duration = $response->{'playlists'}[$i]->{'duration'};
+			$playlist->createdAt = strtotime($response->{'playlists'}[$i]->{'created_at'});
+			$playlist->updatedAt = strtotime($response->{'playlists'}[$i]->{'updated_at'});
+			array_push($result, $playlist);
+		}
+		
+		return $result;
 	}
 	
 	function getPlaylist($stationName, $playlistId, $includeTracks) {
@@ -165,7 +266,40 @@ class LautfmAdmin {
 		}
 		
 		return $tracks;
+	}
+
+
+	// Aktualisiert die Tracks einer Playlist
+	// Returns: Track IDs wie sie tatsaechlich gesetzt wurden (normalerweise identisch mit den ids der uebergebenen Tracks)
+	function setPlaylistTracks($stationName, $playlistId, $tracks) {
+		$trackIds = array();
+		for($i = 0; $i < count($tracks); $i++) {
+			$trackIds[$i] = $tracks[$i]->id;
+		}
+		return $this->setPlaylistTrackIds($stationName, $playlistId, $trackIds);
+	}
+	
+	// Aktualisiert die Tracks einer Playlist
+	// Returns: Track IDs wie sie tatsaechlich gesetzt wurden (normalerweise identisch mit den uebergebenen IDs)
+	function setPlaylistTrackIds($stationName, $playlistId, $trackIds) {
+		$content = "{\"entries\":[";
+		for($i = 0; $i < count($trackIds); $i++) {
+			if($i > 0) $content.= ",";
+			$content.=$trackIds[$i];
+		}
+		$content .="]}";
+						
+		$path = $this->getStationPath($stationName, "/playlists/".$playlistId);
+		$raw = laut_patch($this->origin, $this->token, $path, $content);
 		
+		$response = json_decode($raw);
+
+		$newTrackIds = array();
+		for($i = 0; $i < count($response->{'entries'}); $i++) {
+			$newTrackIds[$i] =  $response->{'entries'}[$i]->{'track_id'};
+		}
+		
+		return $newTrackIds;
 	}
 	
 	function getTrackStatistics($stationName, $days) {
@@ -202,6 +336,36 @@ class LautfmAdmin {
 		}
 		
 		return $entries;
+	}
+	
+	// Sendeplan (ohne Events)
+	function getSchedule($stationName) {
+		$path = $this->getStationPath($stationName, "/schedule");
+		$raw = laut_get($this->origin, $this->token, $path);
+		$response = json_decode($raw);
+		
+				
+		$entries = array();
+		for($i = 0; $i < count($response->{'entries'}); $i++) {
+			$entry = new ScheduleEntry();
+			$entry->playlistId = $response->{'entries'}[$i]->{'playlist_id'};
+			$entry->slot = $response->{'entries'}[$i]->{'slot'};
+			$entry->duration = $response->{'entries'}[$i]->{'duration'};
+			$entries[$i] = $entry;
+		}
+		
+		return $entries;
+	}
+	
+	// Track Ids fuer ein Tag
+	function getTag($stationName, $tag) {
+		$tagEnc = urlencode($tag);
+		$tagEnc = str_replace("+", "%20", $tagEnc);
+		$path = $this->getStationPath($stationName, "/tracks/tags/".$tagEnc);
+
+		$raw = laut_get($this->origin, $this->token, $path);
+		$response = json_decode($raw);
+		return $response;
 	}
 	
 }
@@ -345,6 +509,44 @@ class LiveSession {
 	function getDurationAsString() {
 		return gmdate("H:i:s", $this->getDuration());
 	}
+}
+
+class ScheduleEntry {
+	public $playlistId;
+	public $slot;
+	public $duration;
+
+  // Wochentag: Montag = 0, Dienstag = 1 etc	
+	function getWeekday() {
+		return $this->slot / 24;
+	}
+
+  // Wochentag, gekuerzt auf 3 Buchstaben - entpricht date('D')
+	function getWeekdayAsShortString() {
+		$day = floor($this->slot / 24);
+		switch($day) {
+			case 0:
+			  return "Mon";
+			case 1:
+			  return "Tue";
+			case 2:
+			  return "Wed";
+			case 3:
+			  return "Thu";
+			case 4:
+			  return "Fri";
+			case 5:
+			  return "Sat";
+			case 6:
+			  return "Sun";
+		}
+	}
+
+  // Startzeit (0-24)	
+	function getStartHour() {
+		return $this->slot % 24;
+	}
+	
 }
 
 ?>
