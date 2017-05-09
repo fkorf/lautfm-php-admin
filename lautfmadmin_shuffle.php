@@ -1,4 +1,4 @@
-<?
+<?php
 
 // Gewichtungen fuer Tags
 class Weight {
