@@ -1,5 +1,5 @@
 <!-- Beispiel: Ausgabe der Live-Statistik -->
-<?
+<?php
 
 include("config.php");
 include("lautfmadmin.php");
@@ -51,15 +51,15 @@ if(!is_null($lastLautError)) {
 	  <tr class='lfmtitle'>
 			<td colspan=4 style="padding:5pt" style='vertical-align:middle'>
 				Live-Sessions
-				<?
+				<?php
 				if($displayTimespanSelector) {
 					?>
 					<select name='zeitraum' size=1 onchange="this.form.submit();" style='float:right'>
-						<option value='0' <? echo $selected[0] ?>>&nbsp;Alle&nbsp;</option>
-						<option value='1' <? echo $selected[1] ?>>&nbsp;Aktuelle Woche&nbsp;</option>
-						<option value='2' <? echo $selected[2] ?>>&nbsp;Letzte Woche&nbsp;</option>
+						<option value='0' <?php echo $selected[0] ?>>&nbsp;Alle&nbsp;</option>
+						<option value='1' <?php echo $selected[1] ?>>&nbsp;Aktuelle Woche&nbsp;</option>
+						<option value='2' <?php echo $selected[2] ?>>&nbsp;Letzte Woche&nbsp;</option>
 					</select>
-				  <?
+				  <?php
  			  }
 				?>
 			</td>
@@ -70,7 +70,7 @@ if(!is_null($lastLautError)) {
 			<td class='lfmhead'>Ende</td>
 			<td class='lfmhead'>Dauer</td>
 		</tr>
-		<?
+		<?php
 		$total = 0;
 		for($i = 0; $i < count($logs); $i++) {
 			if($logs[$i]->end >= $minTime && $logs[$i]->end <= $maxTime) {

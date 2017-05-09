@@ -3,7 +3,7 @@ Shuffeln der naechsten Playlists
 Parameter:
 - hours = Zeitraum fuer den Playlits geshuffelt werden sollen (Default = 1)
 -->
-<?
+<?php
 include("config.php");
 include("lautfmadmin.php");
 include("lautfmadmin_shuffle.php");
@@ -12,12 +12,12 @@ include("lautfmadmin_shuffle.php");
 <html>
 	<head>
 		<meta charset="utf-8" /> 
-		<title><? echo $station ?> - Aktuelle Playlist</title>
+		<title><?php echo $station ?> - Aktuelle Playlist</title>
 		<link rel="stylesheet" href="lautfmadmin.css">
 	</head>
 	<body>
 
-<?
+<?php
 $lfm = new LautfmAdmin();
 $lfm->token = $token;
 $shuffler = new PlaylistShuffler($lfm, $station);
@@ -66,7 +66,7 @@ $cnt = 0;
 	<tr class='lfmtitle lfmbig'>
 		<td colspan=4 style="padding:5pt">Playlists shuffeln</td>
 	</tr>
-	<?
+	<?php
 	$weekday = date("D");
 	$startHour = date("G") + 1;
 	for($i = 0; $i < count($entries); $i++) {

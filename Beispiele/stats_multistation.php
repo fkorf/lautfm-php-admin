@@ -1,5 +1,5 @@
 <!-- Beispiel: Statistik fuer mehrere Stationen -->
-<?
+<?php
 
 include("lautfmadmin.php");
 
@@ -37,7 +37,7 @@ for($i = 0; $i < count($stations); $i++) {
 <table cellpadding="4">
 	<tr>
 		<td></td>
-		<?
+		<?php
 		for($i = 0; $i < count($stations); $i++) {
 			echo "<td class='head'>";
 			echo $stationLabels[$i];
@@ -47,7 +47,7 @@ for($i = 0; $i < count($stations); $i++) {
 	</tr>
 	<tr>
 		<td class='head'>H&ouml;rer</td>
-		<?
+		<?php
 		for($i = 0; $i < count($stations); $i++) {
 			echo "<td class='content'>";
 			echo $stats[$i]->listeners;
@@ -57,7 +57,7 @@ for($i = 0; $i < count($stations); $i++) {
 	</tr>
 	<tr>
 		<td class='head'>Rang</td>
-		<?
+		<?php
 		for($i = 0; $i < count($stations); $i++) {
 			echo "<td class='content'>";
 			echo $stats[$i]->position;
@@ -67,7 +67,7 @@ for($i = 0; $i < count($stations); $i++) {
 	</tr>
 	<tr>
 		<td class='head'>Std heute</td>
-		<?
+		<?php
 		for($i = 0; $i < count($stations); $i++) {
 			echo "<td class='content'>";
 			echo $stats[$i]->listeningHours[0];
@@ -77,7 +77,7 @@ for($i = 0; $i < count($stations); $i++) {
 	</tr>
 	<tr>
 		<td class='head'>Std gestern</td>
-		<?
+		<?php
 		for($i = 0; $i < count($stations); $i++) {
 			echo "<td class='content'>";
 			echo $stats[$i]->listeningHours[1];

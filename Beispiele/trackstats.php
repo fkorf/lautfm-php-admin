@@ -1,17 +1,17 @@
 <!-- Beispiel: Track-Statistik -->
-<?
+<?php
 include("config.php");
 include("lautfmadmin.php");
 
 ?>
 <html>
 	<head>
-		<title><? echo $station ?> - Trackstatistik</title>
+		<title><?php echo $station ?> - Trackstatistik</title>
 		<link rel="stylesheet" href="lautfmadmin.css">
 	</head>
 	<body>
 
-		<?
+		<?php
 		
 		$days = $_GET['days'];
 		if($days == "") {
@@ -40,7 +40,7 @@ include("lautfmadmin.php");
 				<td class='lfmhead'>H&ouml;rer</td>
 			</tr>
 			<!-- Entries -->
-			<?
+			<?php
 			for($i = 0; $i < count($entries); $i++) {
 				echo "<tr class='lfmcontent'>";
 				echo "<td class='lfmcontent'>".$entries[$i]->getDayAsString()."</td>";

@@ -1,5 +1,5 @@
 <!-- Beispiel: Zeigt die aktuelle Playlist mit Markierung des laufenden Songs -->
-<?
+<?php
 include("config.php");
 include("lautfmadmin.php");
 
@@ -10,7 +10,7 @@ $colorBackground = "#FAFAFA";
 <html>
 	<head>
 		<meta charset="utf-8" /> 
-		<title><? echo $station ?> - Aktuelle Playlist</title>
+		<title><?php echo $station ?> - Aktuelle Playlist</title>
 		<link rel="stylesheet" href="lautfmadmin.css">
 		
 		<script type="text/javascript" src="//api.laut.fm/js_tools/lautfm_js_tools.0.9.0.js" ></script>
@@ -21,11 +21,11 @@ $colorBackground = "#FAFAFA";
 				var row;
 				if(lastMarkedSong > 0) {
 					row = document.getElementById('track' + lastMarkedSong);
-					row.style.backgroundColor='<? echo $colorBackground; ?>';
+					row.style.backgroundColor='<?php echo $colorBackground; ?>';
 				}
 				row = document.getElementById('track' + song.id);
 				if(row != null) {
-					row.style.backgroundColor='<? echo $colorHighlight; ?>';
+					row.style.backgroundColor='<?php echo $colorHighlight; ?>';
 					row.scrollIntoView();
 					lastMarkedSong = song.id;
 				}
@@ -34,7 +34,7 @@ $colorBackground = "#FAFAFA";
 	</head>
 	<body>
 
-		<?
+		<?php
 		
 		$lfm = new LautfmAdmin();
 		$lfm->token = $token;
@@ -48,7 +48,7 @@ $colorBackground = "#FAFAFA";
 		<table class='lfmadmin' style="margin: 0 auto">
 			<!-- Top-Zeile mit dem Namen der aktuellen Playlist -->
 			<tr class='lfmtitle lfmbig'>
-				<td colspan=4 style="padding:5pt"><? echo $playlist->name; ?></td>
+				<td colspan=4 style="padding:5pt"><?php echo $playlist->name; ?></td>
 			</tr>
 			<!-- Spaltenueberschriften -->
 			<tr class='lfmhead'>
@@ -58,7 +58,7 @@ $colorBackground = "#FAFAFA";
 				<td class='lfmhead'>L&auml;nge</td>
 			</tr>
 			<!-- Songs -->
-			<?
+			<?php
 			$offset = 0;
 			$usedIds = array();
 			for($i = 0; $i < count($playlist->tracks); $i++) {
@@ -83,7 +83,7 @@ $colorBackground = "#FAFAFA";
 		</table>
 		
 		<script>
-		  laut.fm.station('<? echo $station; ?>').current_song(updateCurrentSong, true);
+		  laut.fm.station('<?php echo $station; ?>').current_song(updateCurrentSong, true);
 		</script>
 
 </body>

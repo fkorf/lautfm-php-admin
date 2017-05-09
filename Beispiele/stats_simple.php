@@ -1,5 +1,5 @@
 <!-- Beispiel: Statik fuer einzelne Station -->
-<?
+<?php
 
 include("config.php");
 include("lautfmadmin.php");
@@ -24,19 +24,19 @@ if(!is_null($lastLautError)) {
 		  </tr>
 			<tr class='lfmcontent'>
 				<td class='lfmlabel'>H&ouml;rer</td>
-				<td class='lfmcontent lfmright'><? echo $stats->listeners ?></td>
+				<td class='lfmcontent lfmright'><?php echo $stats->listeners ?></td>
 			</tr>
 			<tr class='lfmcontent'>
 				<td class='lfmlabel'>Rang</td>
-				<td class='lfmcontent lfmright'><? echo $stats->position ?></td>
+				<td class='lfmcontent lfmright'><?php echo $stats->position ?></td>
 			</tr>
 			<tr class='lfmcontent'>
 				<td class='lfmlabel'>Std heute</td>
-				<td class='lfmcontent lfmright'><? echo $stats->listeningHours[0] ?></td>
+				<td class='lfmcontent lfmright'><?php echo $stats->listeningHours[0] ?></td>
 			</tr>
 			<tr class='lfmcontent'>
 				<td class='lfmlabel'>Std gestern</td>
-				<td class='lfmcontent lfmright'><? echo $stats->listeningHours[1] ?></td>
+				<td class='lfmcontent lfmright'><?php echo $stats->listeningHours[1] ?></td>
 			</tr>
 		</table>
 		

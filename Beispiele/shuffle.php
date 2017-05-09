@@ -1,5 +1,5 @@
 <!-- Shuffeln einer ausgewaehlten Playlist mit Anzeige der Titel. -->
-<?
+<?php
 include("config.php");
 include("lautfmadmin.php");
 include("lautfmadmin_shuffle.php");
@@ -9,12 +9,12 @@ $colorHighlight = "#EFEFEF";
 <html>
 	<head>
 		<meta charset="utf-8" /> 
-		<title><? echo $station ?> - Aktuelle Playlist</title>
+		<title><?php echo $station ?> - Aktuelle Playlist</title>
 		<link rel="stylesheet" href="lautfmadmin.css">
 	</head>
 	<body>
 
-		<?
+		<?php
 		$lfm = new LautfmAdmin();
 		$lfm->token = $token;
 		$shuffler = new PlaylistShuffler($lfm, $station);
@@ -65,7 +65,7 @@ $colorHighlight = "#EFEFEF";
 				<td colspan=4 class='lfmhead'>
 					<form>
 					<select size=1 name='playlistId'>
-						<?
+						<?php
 						for($i = 0; $i < count($playlists); $i++) {
 							$selected = $playlists[$i]->id == $playlistId ? "selected" : "";
 							echo "<option value='".$playlists[$i]->id."' $selected>";
@@ -74,16 +74,16 @@ $colorHighlight = "#EFEFEF";
 						}
 						?>
 					</select>
-					<?
+					<?php
 					$hoursDisplay = $hours > 0 ? $hours : "";
 					?>
-					<input type="text" size="2" name="hours" value="<? echo $hoursDisplay; ?>"> Stunden
+					<input type="text" size="2" name="hours" value="<?php echo $hoursDisplay; ?>"> Stunden
 					<input type="submit" value="Shuffeln">
 					</form>					
 				</td>
 			</tr>
 			
-		<?
+		<?php
 		if($playlistId) {
 			$playlist = $lfm->getPlaylist($station, $playlistId, 1);
 			$tracks = $shuffler->shuffle($playlist, $hours);
@@ -100,7 +100,7 @@ $colorHighlight = "#EFEFEF";
 					<td class='lfmhead'>L&auml;nge</td>
 				</tr>
 				<!-- Songs -->
-				<?
+				<?php
 				$offset = 0;
 				for($i = 0; $i < count($tracks); $i++) {
 					$id = $tracks[$i]->id;
