@@ -110,6 +110,8 @@ class LautfmAdmin {
 	
 	public $stationIds = array();
 	
+	private $playlistCache = array();
+	
 	// Liefert Namen aller Stationen auf die Zugriff besteht +
 	// Initialisiert $this->stationIds
 	function getStationNames() {
@@ -190,7 +192,12 @@ class LautfmAdmin {
 	}
 	
 	// Alle Playlists, ohne Tracks
-	function getPlaylists($stationName) {
+	function getPlaylists($stationName, $forceReload = 0) {
+		
+		if(!$forceReload && array_key_exists($stationName, $this->playlistCache)) {
+			return $this->playlistCache[$stationName];
+		}
+		
 		$path = $this->getStationPath($stationName, "/playlists");
 		$raw = laut_get($this->origin, $this->token, $path);
 		$response = json_decode($raw);
@@ -211,8 +218,20 @@ class LautfmAdmin {
 			array_push($result, $playlist);
 		}
 		
+		$this->playlistCache[$stationName] = $result;
+		
 		return $result;
 	}
+	
+	function getPlaylistByName($stationName, $playlistName) {
+		foreach($this->getPlaylists($stationName) as $playlist) {
+			if(strcasecmp($playlistName, $playlist->name) == 0) {
+				return $playlist;
+			}
+		}
+		return NULL;
+	}
+	
 	
 	function getPlaylist($stationName, $playlistId, $includeTracks) {
 		$path = $this->getStationPath($stationName, "/playlists/".$playlistId);
