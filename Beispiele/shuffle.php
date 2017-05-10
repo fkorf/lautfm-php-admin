@@ -33,9 +33,17 @@ $colorHighlight = "#EFEFEF";
 		// Maximale Zahl der Tacks pro Artist. Nur relevant wenn nicht ueber die volle Laenge geschuffelt wird.
 		// 0 = Playlistlaenge in Stunden (z. B. 3 Tracks pro Artist in Playlist von 3 Stunden Laenge)
 		$shuffler->defaultSettings->maxTracksPerArtist = 0;
+
+    // Strategie fuer Wortbeitraege
+		$shuffler->defaultSettings->wordDistributionStrategy = WordDistribution::RANDOM;
 		
 		// Gewichtungen fuer Tags. Nur relevant wenn nicht ueber die volle Laenge geschuffelt wird.
 		// $shuffler->defaultSettings->weights["uebergewichten"] = Weight::HIGH_MEDIUM;
+		
+		// Alternativ: Gewichtungen auf Basis von Trackfiltern
+		// $filter = new PlaylistTrackFilter("My Playlist");
+		// $shuffler->trackFilters["My Playlist"] = $filter;
+		// $shuffler->defaultSettings->weights["My Playlist"] = Weight::HIGH_MEDIUM;
 		
 		// Angepasste Settings fuer Playlists
 		// $ps = $s->defaultSettings->copy();
