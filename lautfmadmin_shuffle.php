@@ -13,10 +13,10 @@ class Weight {
 
 // Strategie fuer Wortbeitraege
 class WordDistribution {
-	const RANDOM = 0;
-	// const PROTECT = 1;
-	// const SUCCESSOR_COUPLING = 2;
-	// const PREDECESSOR_COUPLING = 3;
+	const RANDOM = 0;  				// Beitraege shuffeln
+	const PROTECT = 1; 				// Beitraege auf urspruenglicher Position belassen
+	const LINK_NEXT = 2;			// Beitraege an nachfolgenden Titel koppeln
+	const LINK_PREVIOUS = 3;  // Beitraege an vorhergehenden Titel koppeln
 }
 
 // Default- oder Playlisteinstellungen
@@ -60,9 +60,43 @@ class ArtistNormalizer {
 	}
 }
 
+// Interface fuer Trackfilterung
+interface TrackFilter {
+	// Track-IDs die dieser Filter akzeptiert
+	public function getTrackIds($client, $stationName);
+}
+
+// Tracks einer Playlist
+class PlaylistTrackFilter implements TrackFilter {
+	  public $playlistName;
+
+	  function __construct($playlistName) { 
+	  	$this->playlistName = $playlistName;
+	  }
+	
+		public function getTrackIds($client, $stationName) {
+			$trackIds = array();
+			
+			$playlist = $client->getPlaylistByName($stationName, $this->playlistName);
+			if(!is_null($playlist)) {
+				// Wir gehen direkt runter auf die Radioadmin-API - ist effizienter
+				$path = $client->getStationPath($stationName, "/playlists/".$playlist->id);
+				$raw = laut_get($client->origin, $client->token, $path);
+				$response = json_decode($raw);
+				
+				for($i = 0; $i < count($response->{'entries'}); $i++) {
+					array_push($trackIds, $response->{'entries'}[$i]->{'track_id'});
+				}
+			}
+			return $trackIds;
+		}
+}
+
 class PlaylistShuffler {
 	public $defaultSettings;
 	public $artistNormalizer;
+	
+	public $trackFilters = array(); // key = name, value = TrackFilter
 	
 	private $client; 
 	private $station;
@@ -147,6 +181,8 @@ class PlaylistShuffler {
 
 		$tracks = $this->insertJingles($job, $tracks, $settings, $targetLengthSec);
 		$tracks = $this->appendUnused($job, $tracks);
+		$tracks = $this->insertLinkedTracks($job, $tracks,$settings);
+		$tracks = $this->insertProtectedTracks($job, $tracks);
 				
 		return $tracks;
 	}
@@ -159,7 +195,7 @@ class PlaylistShuffler {
 		$job = new ShuffleJob();
 		
 		$knownJingles = array();
-		
+				
 		for($i = 0; $i < count($playlist->tracks); $i++) {
 			$track = $playlist->tracks[$i];
 			
@@ -176,9 +212,19 @@ class PlaylistShuffler {
 					}
 				}
 			}
-			// else if($track->type == "word" && $settings->wordDistributionStrategy != WordDistribution::RANDOM) {
-				// TODO
-			// }
+			else if($track->type == "moderation" && $settings->wordDistributionStrategy != WordDistribution::RANDOM) {
+				if($settings->wordDistributionStrategy == WordDistribution::PROTECT) {
+					$job->protectedTracks[$i] = $track;
+				}
+				else if($settings->wordDistributionStrategy == WordDistribution::LINK_NEXT && $i < count($playlist->tracks) - 1) {
+					$nextTrack = $playlist->tracks[$i + 1];
+					$job->linkedTracks[$nextTrack->id] = $track;				
+				}
+				else if($settings->wordDistributionStrategy == WordDistribution::LINK_PREVIOUS && $i > 0) {
+					$prevTrack = $playlist->tracks[$i - 1];
+					$job->linkedTracks[$prevTrack->id] = $track;				
+				}
+			}
 			else {
 				$artistName = $this->artistNormalizer->normalize($track->artist);
 			  if(array_key_exists($artistName, $artists)) {
@@ -264,6 +310,41 @@ class PlaylistShuffler {
 			$i++;
 		}
 		
+	}
+	
+	private function insertProtectedTracks($job, $tracks) {
+		if(count($job->protectedTracks) == 0) {
+			return $tracks;
+		}
+		$newTracks = array();
+		for($i = 0; $i < count($tracks); $i++) {
+			$key = count($newTracks);
+			if(array_key_exists($key, $job->protectedTracks)) {
+				array_push($newTracks, $job->protectedTracks[$key]);
+			}
+			array_push($newTracks, $tracks[$i]);
+		}
+		
+		return $newTracks;
+	}
+	
+	private function insertLinkedTracks($job, $tracks, $settings) {
+		if(count($job->linkedTracks) == 0) {
+			return $tracks;
+		}
+		$newTracks = array();
+		for($i = 0; $i < count($tracks); $i++) {
+			$key = $tracks[$i]->id;
+			if($settings->wordDistributionStrategy == WordDistribution::LINK_NEXT && array_key_exists($key, $job->linkedTracks)) {
+				array_push($newTracks, $job->linkedTracks[$key]);
+			}
+			array_push($newTracks, $tracks[$i]);
+			if($settings->wordDistributionStrategy == WordDistribution::LINK_PREVIOUS && array_key_exists($key, $job->linkedTracks)) {
+				array_push($newTracks, $job->linkedTracks[$key]);
+			}
+		}
+		
+		return $newTracks;
 	}
 	
 	private function insertJingles($job, $tracks, $settings, $playlistLength) {
@@ -359,12 +440,19 @@ class PlaylistShuffler {
 		return $tracks;
 	}
 	
-	// Get track ids for tag. Uses caching.
+	// Get track ids for tag or filter. Uses caching.
 	private function getTag($tagName) {
 		if(array_key_exists($tagName, $this->tags)) {
 			return $this->tags[$tagName];
 		}
-		$trackIds = $this->client->getTag($this->station, $tagName);
+		
+		$trackIds = NULL;
+		if(array_key_exists($tagName, $this->trackFilters)) {
+			$trackIds = $this->trackFilters[$tagName]->getTrackIds($this->client, $this->station);
+		}
+		else {
+			$trackIds = $this->client->getTag($this->station, $tagName);
+		}
 		$this->tags[$tagName] = $trackIds;
 		return $trackIds;
 	}
@@ -378,6 +466,9 @@ class ShuffleJob {
 	public $artists = array();
 	public $jingles = array();
 	public $startJingle;
+	
+	public $protectedTracks = array();
+	public $linkedTracks = array();
 		
 	function getMaxArtistTracksToUse() {
 		$max = 0;
