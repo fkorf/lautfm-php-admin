@@ -92,6 +92,50 @@ class PlaylistTrackFilter implements TrackFilter {
 		}
 }
 
+// Filter: Gespielte Tracks
+class PlayedTracksFilter implements TrackFilter {
+	public $days = 0; 			// Zahl der Tage fuer die die Trackstatistik abgerufen wird
+	public $minPlays = 1;		// Mindestanzahl der Plays fuer einen Track
+	public $minHour = 0;		// Startzeit (min)
+	public $maxHour = 23;   // Startzeit (max)
+
+	function __construct($days, $minHour = 0, $maxHour = 23, $minPlays = 1) { 
+	  $this->days = $days;
+	  $this->minHour = $minHour;
+	  $this->maxHour = $maxHour;
+	  $this->minPlays = $minPlays;
+	}
+	
+	public function getTrackIds($client, $stationName) {
+		$trackIds = array();
+		$cache = TrackStatisticsCache::Instance();
+		$entries = $cache->getTrackStatistics($client, $stationName, $this->days);
+		$trackCounts = array();
+		for($i = 0; $i < count($entries); $i++) {
+			if($entries[$i]->id > 0) {
+				$hour = date("G", $entries[$i]->start);
+				if($hour >= $this->minHour && $hour <= $this->maxHour) {
+					if($this->minPlays < 2) {
+						array_push($trackIds, $entries[$i]->id);
+					}
+					else {
+						$trackCounts[$entries[$i]->id]++;
+					}
+				}
+			}
+		}
+		if($this->minPlays > 1) {
+			foreach ($trackCounts as $trackId => $count) {
+				if($count >= $this->minPlays) {
+					array_push($trackIds, $trackId);
+				}
+			}
+		}
+		return $trackIds;
+	}
+
+}
+
 class PlaylistShuffler {
 	public $defaultSettings;
 	public $artistNormalizer;
@@ -264,7 +308,18 @@ class PlaylistShuffler {
 		foreach ($settings->weights as $tagName => $weight) {
 			$trackIds = $this->getTag($tagName);
 			for($i = 0; $i < count($trackIds); $i++) {
-				$weights[$trackIds[$i]] = $weight;
+				if(array_key_exists($trackIds[$i], $weights)) {
+					$old = $weights[$trackIds[$i]];
+					if(($weight > 0 && $old > 0 && $weight > $old) || ($weight < 0 && $old < 0 && $weight < $old)) {
+						$weights[$trackIds[$i]] = $weight;
+					}
+					else if(($old > 0 && $weight < 0) || ($weight > 0 && $old < 0)) {
+						$weights[$trackIds[$i]] = $weight + $old;
+					}
+				}
+				else {
+					$weights[$trackIds[$i]] = $weight;
+				}
 			}
 		}
 		
@@ -525,6 +580,33 @@ class ShuffleCandidate {
 	public $track;
 	public $score;
 	public $use = 0; // whether or not to use this track in the start section of the playlist
+}
+
+// Simple cache for track statistics
+class TrackStatisticsCache {
+	  private $entries = array();
+	  private $daysRetrieved = array();
+	
+    public static function Instance()
+    {
+        static $inst = null;
+        if ($inst === null) {
+            $inst = new TrackStatisticsCache();
+        }
+        return $inst;
+    }
+
+    private function __construct()
+    {
+    }	
+    
+    function getTrackStatistics($client, $station, $days) {
+    	if(!$this->daysRetrieved[$station] || $days > $this->daysRetrieved[$station]) {
+    		$this->entries[$station] = $client->getTrackStatistics($station, $days);
+    		$this->daysRetrieved[$station] = $days;
+    	}
+    	return $this->entries[$station];
+    }
 }
 
 function cmpScore($a, $b) {
