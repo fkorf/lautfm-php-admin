@@ -561,7 +561,7 @@ class ScheduleEntry {
 		}
 	}
 
-  // Startzeit (0-24)	
+  // Startzeit (0-23)	
 	function getStartHour() {
 		return $this->slot % 24;
 	}
