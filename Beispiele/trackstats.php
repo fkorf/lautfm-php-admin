@@ -6,6 +6,7 @@ include("lautfmadmin.php");
 ?>
 <html>
 	<head>
+		<meta charset="utf-8" /> 
 		<title><?php echo $station ?> - Trackstatistik</title>
 		<link rel="stylesheet" href="lautfmadmin.css">
 	</head>
