@@ -19,11 +19,18 @@ class WordDistribution {
 	const LINK_PREVIOUS = 3;  // Beitraege an vorhergehenden Titel koppeln
 }
 
+class JingleOrder {
+	const PRESERVE = 0;				// Originalreihenfolge beibehalten
+	const SHUFFLE_REPEAT = 1; // Zufaellige Reihenfolge mit Wiederholung nach letztem Jingle
+	const SHUFFLE = 2;				// Zufaellige Reinehfolge, erneutest Shuffeln nach letztem Jingle
+}
+
 // Default- oder Playlisteinstellungen
 class ShuffleSettings {
-	public $shuffleJingles = 0;
+	public $shuffleJingles = JingleOrder::PRESERVE;
 	public $jingleInterval = 0;
 	public $protectFirstJingle = 0;
+	public $offsetFirstJingle = -1; // -1 = zufaellig zwischen 0 und jingleInterval, sonst an vorgegebener Position
 	public $wordDistributionStrategy = WordDistribution::RANDOM;
 	
 	public $maxTracksPerArtist = 0; // 0 = Abhaengig von Laenge
@@ -33,8 +40,9 @@ class ShuffleSettings {
 	function copy() {
 		$c = new ShuffleSettings();
 		$c->shuffleJingles = $this->shuffleJingles;
-		$c->jingleInterval = $this->jingleInterval;
+		$c->offsetFirstJingle = $this->offsetFirstJingle;
 		$c->protectFirstJingle = $this->protectFirstJingle;
+		$c->jingleInterval = $this->jingleInterval;
 		$c->wordDistributionStrategy = $this->wordDistributionStrategy;
 		$c->maxTracksPerArtist = $this->maxTracksPerArtist;
 		$c->weights = $this->weights;
@@ -286,7 +294,7 @@ class PlaylistShuffler {
 			}
 		}
 		
-		if(count($job->jingles) > 0 && $settings->shuffleJingles == 1) {
+		if(count($job->jingles) > 0 && $settings->shuffleJingles > 0) {
 			$job->jingles = shuffleArray($job->jingles);
 		}
 		
@@ -427,7 +435,7 @@ class PlaylistShuffler {
 			$jingleOffset = $jingleInterval;
 		}
 		else {
-			$jingleOffset = rand(0, $jingleInterval);
+			$jingleOffset = $settings->offsetFirstJingle == -1 ? rand(0, $jingleInterval) : $settings->offsetFirstJingle;
 			$timeNextJingle = $jingleOffset;
 		}
 		
@@ -440,7 +448,15 @@ class PlaylistShuffler {
 	    	array_push($newTracks, $job->jingles[$jingleIdx]);
 	    	$usedJingles[$jingleIdx] = 1;
 	      $currentTimeSec += $job->jingles[$jingleIdx]->duration;
-	      $jingleIdx = ($jingleIdx + 1) % count($job->jingles);
+	      $jingleIdx++;
+	      if($jingleIdx == count($job->jingles)) {
+	      	$jingleIdx = 0;
+	      	if(count($job->jingles) > 1 && $settings->shuffleJingles == JingleOrder::SHUFFLE) {
+	      		// all jingles used, shuffle again
+						$job->jingles = shuffleArray($job->jingles);
+	      	}
+	      }
+	      
 	      $jingleCnt++;
 	      $timeNextJingle = $jingleCnt * $jingleInterval + $jingleOffset;
     	}
