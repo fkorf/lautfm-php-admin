@@ -27,8 +27,8 @@ $colorHighlight = "#EFEFEF";
 	  // Wenn erster Track Jingle ist: Stehen lassen?
 		$shuffler->defaultSettings->protectFirstJingle = 1;
 		
-		// Jingles shuffeln (1) oder in Originalreihenfolge einfuegen (0)?
-		$shuffler->defaultSettings->shuffleJingles = 1;
+		// Jingles in Originalreihenfolge einfuegen oder shuffeln
+		$shuffler->defaultSettings->shuffleJingles = JingleOrder::PRESERVE;
 		
 		// Maximale Zahl der Tacks pro Artist. Nur relevant wenn nicht ueber die volle Laenge geschuffelt wird.
 		// 0 = Playlistlaenge in Stunden (z. B. 3 Tracks pro Artist in Playlist von 3 Stunden Laenge)

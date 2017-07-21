@@ -35,8 +35,8 @@ $shuffler->defaultSettings->jingleInterval = 0;
 // Wenn erster Track Jingle ist: Stehen lassen?
 $shuffler->defaultSettings->protectFirstJingle = 1;
 
-// Jingles shuffeln (1) oder in Originalreihenfolge einfuegen (0)?
-$shuffler->defaultSettings->shuffleJingles = 1;
+// Jingles in Originalreihenfolge einfuegen oder shuffeln
+$shuffler->defaultSettings->shuffleJingles = JingleOrder::PRESERVE;
 
 // Maximale Zahl der Tacks pro Artist. Nur relevant wenn nicht ueber die volle Laenge geschuffelt wird.
 // 0 = Playlistlaenge in Stunden (z. B. 3 Tracks pro Artist in Playlist von 3 Stunden Laenge)
@@ -70,10 +70,15 @@ $cnt = 0;
 		<td colspan=4 style="padding:5pt">Playlists shuffeln</td>
 	</tr>
 	<?php
-	$weekday = date("D");
+	$weekday = date("w");
+	// date("w") liefert Wochentag mit 0 = Sonntag, laut.fm benutzt 0 = Montag
+	$weekday = $weekday > 0 ? $weekday - 1 : 6;
 	$startHour = date("G") + 1;
+	$minSlot = $weekday * 24 + $startHour;
+	$maxSlot = $minSlot + $hours - 1;
+	
 	for($i = 0; $i < count($entries); $i++) {
-		if($entries[$i]->getWeekdayAsShortString() == $weekday && $entries[$i]->getStartHour() >= $startHour && $entries[$i]->getStartHour() < $startHour + $hours) {
+		if($entries[$i]->slot >= $minSlot && $entries[$i]->slot <= $maxSlot) {
 			$cnt++;
 			$playlist = $lfm->getPlaylist($station, $entries[$i]->playlistId, 1);
 			echo "<tr class='lfmcontent'>";
