@@ -321,15 +321,10 @@ class LautfmAdmin {
 		return $newTrackIds;
 	}
 	
-	function getTrackStatistics($stationName, $days) {
-		if($days > 7) {
-			$days = 7;
-		}
-		$path = $this->getStationPath($stationName, "/tracks/stats?days=".$days);
-		$raw = laut_get($this->origin, $this->token, $path);
+	function parseTrackStatistics($raw) {
+		$entries = array();
 		$response = json_decode($raw);
 		
-		$entries = array();
 		for($i = 0; $i < count($response); $i++) {
 			$entry = new TrackStatisticsEntry();
 			
@@ -356,6 +351,48 @@ class LautfmAdmin {
 		
 		return $entries;
 	}
+
+  // Statistik für $days zurueckliegende Tage, mit $days = 0 nur fuer heute		
+	function getTrackStatistics($stationName, $days) {
+		if($days > 7) {
+			$days = 7;
+		}
+		$path = $this->getStationPath($stationName, "/tracks/stats");
+		$raw = laut_get($this->origin, $this->token, $path);
+		$entries = $this->parseTrackStatistics($raw);
+		
+		if($days > 0) {
+			$minTime = time() - 60 * 60 * 24 * $days;
+			for($i = 0; $i < $days; $i++) {
+				$ts = time() - 60 * 60 * 24 * ($i + 1);
+				$date = date("Y-m-d", $ts);
+				$dayEntries = array_reverse($this->getTrackStatisticsByDate($stationName, $date));
+				if($i == $days - 1) {
+					// filter by minTime
+					for($j = 0; $j < count($dayEntries); $j++) {
+						$c = $dayEntries[$j]->start;
+						if($dayEntries[$j]->start > $minTime) {
+							array_push($entries, $dayEntries[$j]);
+						}
+					}
+				}
+				else {
+					// just merge
+					$entries = array_merge($entries, $dayEntries);
+				}
+			}
+	  }
+		
+		return $entries;
+	}
+	
+	// Statistik fuer bestimmten Tag, aber nicht heute
+	function getTrackStatisticsByDate($stationName, $date) {
+		$path = $this->getStationPath($stationName, "/tracks/stats/".$date);
+		$raw = laut_get($this->origin, $this->token, $path);
+		return $this->parseTrackStatistics($raw);
+	}
+
 	
 	// Sendeplan (ohne Events)
 	function getSchedule($stationName) {
