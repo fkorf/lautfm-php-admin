@@ -85,6 +85,50 @@ function laut_patch($origin, $token, $path, $content) {
 	    $msg .= "\r\n";
 	    $msg .= $content;
 	    $msg .= "\r\n";
+	    
+	    if ( fwrite($fp, $msg) ) {
+	        while ( !feof($fp) ) {
+	            $response .= fgets($fp, 1024);
+	        }
+	    }
+	    fclose($fp);
+	    
+	    // response enthaelt kompletten http-Header - wir wollen nur den eigentlichen Content
+	    return stripHttpHeader($response);
+	} 
+	else {
+		$lastLautError = $errstr;
+	}
+	return $response;
+}
+
+function laut_post($origin, $token, $path, $content) {
+	global $lastLautError;
+	$response = "";
+	$errno = 0;
+	$errstr = null;
+	$lastLautError = null;
+	if ( $fp = fsockopen('ssl://api.radioadmin.laut.fm', 443, $errno, $errstr, 30) ) {
+		
+	    $contentLength = strlen($content) + 2;
+	    if($content == "") {
+	    	$contentLength = 0;
+	    }
+	    	
+	
+	    $msg  = "POST $path HTTP/1.1\r\n";
+	    $msg .= "Host: api.radioadmin.laut.fm\r\n";
+	    $msg .= "Authorization: Bearer $token\r\n";
+	    $msg .= "Origin: $origin \r\n";
+	    $msg .= "Content-Type: application/json; charset=UTF-8\r\n";
+	    $msg .= "Content-Length: ".$contentLength."\r\n";
+	    $msg .= "Connection: close\r\n\r\n";
+	    
+	    $msg .= "\r\n";
+	    if($content != "") {
+		    $msg .= $content;
+		    $msg .= "\r\n";
+	  	}
 	    	    
 	    if ( fwrite($fp, $msg) ) {
 	        while ( !feof($fp) ) {
@@ -183,6 +227,29 @@ class LautfmAdmin {
 		}
 		
 		return $logs;
+	}
+	
+	function resetLivePassword($stationName) {
+		$path = $this->getStationPath($stationName, "/live/password");
+		laut_post($this->origin, $this->token, $path, "");
+	}
+	
+	function getLiveAccount($stationName) {
+		$path = $this->getStationPath($stationName, "/live");
+		$raw = laut_get($this->origin, $this->token, $path);
+		$response = json_decode($raw);
+		$acc = new LiveAccount();
+				
+		$acc->protocol = $response->{'protocol'};
+		$acc->server = $response->{'server'};
+		$acc->mountpoint = $response->{'mountpoint'};
+		$acc->user = $response->{'user'};
+		$acc->password = $response->{'password'};
+		$acc->bitrate = $response->{'bitrate'};
+		$acc->format = $response->{'format'};
+		$acc->url = $response->{'url'};
+
+		return $acc;
 	}
 	
 	function getCurrentPlaylistId($stationName) {
@@ -531,6 +598,18 @@ class Statistics {
 	public $switchOns = array();
 	public $listeningHours = array();
 }
+
+class LiveAccount {
+	public $protocol;
+	public $server;
+	public $password;
+	public $mountpoint;
+	public $user;
+	public $bitrate;
+	public $format;
+	public $url;
+}
+
 
 class LiveSession {
 	public $start;
